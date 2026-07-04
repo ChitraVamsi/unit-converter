@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Convert temperature units — Celsius, Fahrenheit, and Kelvin."/>
+    <title>Temperature Converter — UnitFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deep:   #0a0d14;
+            --bg-card:   #111827;
+            --bg-input:  #0f172a;
+            --border:    rgba(255,255,255,0.07);
+            --accent:    #f97316;
+            --accent-lt: #fb923c;
+            --accent-glow: rgba(249,115,22,0.2);
+            --text-primary:   #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted:     #475569;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 70% 50% at 20% 0%, rgba(249,115,22,0.1) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 80% 90%, rgba(251,146,60,0.06) 0%, transparent 55%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page-wrapper { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+        nav {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 20px 48px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(10,13,20,0.8);
+            backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-logo {
+            font-size: 1.4rem; font-weight: 800;
+            background: linear-gradient(135deg, #6c63ff, #38bdf8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            text-decoration: none; letter-spacing: -0.5px;
+        }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none;
+            font-size: 0.875rem; font-weight: 500;
+            padding: 8px 16px; border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .nav-links a:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+        .nav-links a.active { color: var(--accent-lt); background: rgba(249,115,22,0.1); }
+
+        main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 60px 24px 80px; }
+
+        .page-header { text-align: center; margin-bottom: 48px; }
+        .page-icon {
+            width: 64px; height: 64px; border-radius: 18px;
+            background: rgba(249,115,22,0.1);
+            border: 1px solid rgba(249,115,22,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; margin: 0 auto 20px;
+        }
+        .page-header h1 {
+            font-size: 2.25rem; font-weight: 800; letter-spacing: -0.8px;
+            margin-bottom: 10px;
+        }
+        .page-header h1 span {
+            background: linear-gradient(135deg, var(--accent), var(--accent-lt));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .page-header p { color: var(--text-secondary); font-size: 0.95rem; }
+
+        .converter-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+        }
+
+        .form-group { margin-bottom: 24px; }
+
+        label {
+            display: block;
+            font-size: 0.8125rem; font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            letter-spacing: 0.04em; text-transform: uppercase;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem; font-weight: 500;
+            padding: 14px 18px;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            -webkit-appearance: none; appearance: none;
+        }
+
+        input[type="number"]:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        input[type="number"]::placeholder { color: var(--text-muted); }
+
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 44px;
+            cursor: pointer;
+        }
+
+        .units-row {
+            display: grid;
+            grid-template-columns: 1fr 48px 1fr;
+            align-items: end;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .swap-btn {
+            width: 48px; height: 48px;
+            background: rgba(249,115,22,0.08);
+            border: 1px solid rgba(249,115,22,0.18);
+            border-radius: 50%;
+            color: var(--accent-lt);
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 22px;
+            transition: all 0.2s ease;
+        }
+        .swap-btn:hover { background: rgba(249,115,22,0.15); transform: rotate(180deg); }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--accent) 0%, #ea580c 100%);
+            border: none;
+            border-radius: var(--radius-md);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem; font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 24px rgba(249,115,22,0.3);
+        }
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(249,115,22,0.4); }
+        .submit-btn:active { transform: translateY(0); }
+
+        .result-panel {
+            margin-top: 28px;
+            background: rgba(249,115,22,0.07);
+            border: 1px solid rgba(249,115,22,0.18);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            animation: fadeInUp 0.4s ease;
+        }
+        .result-label {
+            font-size: 0.75rem; font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.08em; text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .result-value {
+            font-size: 2.5rem; font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent-lt));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            letter-spacing: -1px; line-height: 1.2;
+        }
+        .result-unit { font-size: 0.875rem; color: var(--text-secondary); margin-top: 6px; }
+
+        .error-panel {
+            margin-top: 24px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            color: #fca5a5;
+            font-size: 0.875rem; font-weight: 500;
+            display: flex; align-items: center; gap: 10px;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        /* Thermometer Scale Visual */
+        .scale-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 36px;
+        }
+
+        .scale-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px 16px;
+            text-align: center;
+        }
+
+        .scale-card-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+
+        .scale-ref { margin-bottom: 8px; }
+        .scale-ref-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px; }
+        .scale-ref-value { font-size: 0.875rem; font-weight: 700; color: var(--text-secondary); }
+        .scale-ref-value.hot  { color: #f97316; }
+        .scale-ref-value.body { color: #fbbf24; }
+        .scale-ref-value.cold { color: #38bdf8; }
+        .scale-ref-value.abs  { color: #a78bfa; }
+
+        footer {
+            text-align: center; padding: 28px 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted); font-size: 0.8125rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 640px) {
+            nav { padding: 16px 20px; }
+            .converter-card { padding: 28px 20px; }
+            .units-row { grid-template-columns: 1fr; }
+            .swap-btn { display: none; }
+            .result-value { font-size: 1.75rem; }
+            .scale-cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+    <nav>
+        <a href="/" class="nav-logo">⚡ UnitFlow</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/length">Length</a>
+            <a href="/weight">Weight</a>
+            <a href="/temperature" class="active">Temperature</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="page-header">
+            <div class="page-icon">🌡️</div>
+            <h1><span>Temperature</span> Converter</h1>
+            <p>Instantly switch between Celsius, Fahrenheit, and Kelvin</p>
+        </div>
+
+        <div class="converter-card">
+            <form method="POST" action="/temperature" target="_self" id="temperature-form">
+
+                <div class="form-group">
+                    <label for="value">Value to Convert</label>
+                    <input
+                        type="number"
+                        id="value"
+                        name="value"
+                        placeholder="Enter a temperature…"
+                        step="any"
+                        th:value="${value}"
+                        required/>
+                </div>
+
+                <div class="units-row">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label for="fromUnit">From</label>
+                        <select id="fromUnit" name="fromUnit">
+                            <option value="celsius"    th:selected="${fromUnit == 'celsius'}">Celsius (°C)</option>
+                            <option value="fahrenheit" th:selected="${fromUnit == 'fahrenheit'}">Fahrenheit (°F)</option>
+                            <option value="kelvin"     th:selected="${fromUnit == 'kelvin'}">Kelvin (K)</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="swap-btn" id="swap-btn" title="Swap units" onclick="swapUnits()">⇄</button>
+
+                    <div class="form-group" style="margin-bottom:0">
+                        <label for="toUnit">To</label>
+                        <select id="toUnit" name="toUnit">
+                            <option value="celsius"    th:selected="${toUnit == 'celsius'}">Celsius (°C)</option>
+                            <option value="fahrenheit" th:selected="${toUnit == 'fahrenheit'}">Fahrenheit (°F)</option>
+                            <option value="kelvin"     th:selected="${toUnit == 'kelvin'}">Kelvin (K)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="convert-btn">Convert →</button>
+
+                <div class="result-panel" th:if="${result != null}" id="result-panel">
+                    <div class="result-label">Result</div>
+                    <div class="result-value" th:text="${result}" id="result-value">—</div>
+                    <div class="result-unit" th:text="${toUnit}" id="result-unit"></div>
+                </div>
+
+                <div class="error-panel" th:if="${error != null}" id="error-panel">
+                    ⚠ <span th:text="${error}"></span>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Temperature Scale Reference -->
+        <div class="scale-cards">
+            <div class="scale-card">
+                <div class="scale-card-title">Celsius (°C)</div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Water Boils</div>
+                    <div class="scale-ref-value hot">100 °C</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Body Temp</div>
+                    <div class="scale-ref-value body">37 °C</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Water Freezes</div>
+                    <div class="scale-ref-value cold">0 °C</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Absolute Zero</div>
+                    <div class="scale-ref-value abs">−273.15 °C</div>
+                </div>
+            </div>
+            <div class="scale-card">
+                <div class="scale-card-title">Fahrenheit (°F)</div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Water Boils</div>
+                    <div class="scale-ref-value hot">212 °F</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Body Temp</div>
+                    <div class="scale-ref-value body">98.6 °F</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Water Freezes</div>
+                    <div class="scale-ref-value cold">32 °F</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Absolute Zero</div>
+                    <div class="scale-ref-value abs">−459.67 °F</div>
+                </div>
+            </div>
+            <div class="scale-card">
+                <div class="scale-card-title">Kelvin (K)</div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Water Boils</div>
+                    <div class="scale-ref-value hot">373.15 K</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Body Temp</div>
+                    <div class="scale-ref-value body">310.15 K</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Water Freezes</div>
+                    <div class="scale-ref-value cold">273.15 K</div>
+                </div>
+                <div class="scale-ref">
+                    <div class="scale-ref-label">Absolute Zero</div>
+                    <div class="scale-ref-value abs">0 K</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 UnitFlow · Built with Spring Boot &amp; Thymeleaf</p>
+    </footer>
+
+</div>
+
+<script>
+    function swapUnits() {
+        const from = document.getElementById('fromUnit');
+        const to   = document.getElementById('toUnit');
+        const tmp  = from.value;
+        from.value = to.value;
+        to.value   = tmp;
+    }
+</script>
+</body>
+</html>

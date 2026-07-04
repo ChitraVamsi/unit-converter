@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="UnitFlow — A modern unit converter for length, weight, and temperature."/>
+    <title>UnitFlow — Unit Converter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <style>
+        /* ── Global Reset & Variables ─────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-deep:    #0a0d14;
+            --bg-card:    #111827;
+            --bg-hover:   #1a2236;
+            --border:     rgba(255,255,255,0.07);
+            --accent-1:   #6c63ff;
+            --accent-2:   #a78bfa;
+            --accent-3:   #38bdf8;
+            --text-primary:   #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted:     #475569;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --shadow-glow: 0 0 40px rgba(108,99,255,0.15);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated Background ──────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 10%, rgba(108,99,255,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(56,189,248,0.08) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Layout ───────────────────────────────────────────────── */
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* ── Nav ──────────────────────────────────────────────────── */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 48px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(10,13,20,0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links { display: flex; gap: 8px; }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .nav-links a.active {
+            color: var(--accent-2);
+            background: rgba(108,99,255,0.12);
+        }
+
+        /* ── Hero ─────────────────────────────────────────────────── */
+        .hero {
+            text-align: center;
+            padding: 90px 24px 60px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(108,99,255,0.1);
+            border: 1px solid rgba(108,99,255,0.3);
+            color: var(--accent-2);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 100px;
+            margin-bottom: 28px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-3) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 480px;
+            margin: 0 auto 48px;
+            line-height: 1.7;
+        }
+
+        /* ── Cards Grid ───────────────────────────────────────────── */
+        .cards-section {
+            padding: 0 24px 80px;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .converter-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 36px 32px;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .converter-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .converter-card:hover {
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .converter-card:hover::before { opacity: 1; }
+
+        /* Individual card accent colours */
+        .card-length { --card-color: #6c63ff; --card-color-2: #a78bfa; }
+        .card-weight { --card-color: #38bdf8; --card-color-2: #67e8f9; }
+        .card-temp   { --card-color: #f97316; --card-color-2: #fb923c; }
+
+        .converter-card:hover {
+            border-color: rgba(var(--card-color-rgb, 108,99,255), 0.4);
+        }
+
+        .card-length:hover { border-color: rgba(108,99,255,0.4); box-shadow: 0 0 40px rgba(108,99,255,0.15); }
+        .card-weight:hover { border-color: rgba(56,189,248,0.4); box-shadow: 0 0 40px rgba(56,189,248,0.12); }
+        .card-temp:hover   { border-color: rgba(249,115,22,0.4); box-shadow: 0 0 40px rgba(249,115,22,0.12); }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            margin-bottom: 24px;
+        }
+
+        .card-length .card-icon { background: rgba(108,99,255,0.15); }
+        .card-weight .card-icon { background: rgba(56,189,248,0.12); }
+        .card-temp   .card-icon { background: rgba(249,115,22,0.12); }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -0.3px;
+        }
+
+        .card-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .card-units {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .unit-pill {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 100px;
+            letter-spacing: 0.04em;
+        }
+
+        .card-length .unit-pill { background: rgba(108,99,255,0.15); color: var(--accent-2); }
+        .card-weight .unit-pill { background: rgba(56,189,248,0.12); color: var(--accent-3); }
+        .card-temp   .unit-pill { background: rgba(249,115,22,0.1);  color: #fb923c; }
+
+        .card-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: gap 0.2s ease;
+        }
+
+        .card-length .card-cta { color: var(--accent-2); }
+        .card-weight .card-cta { color: var(--accent-3); }
+        .card-temp   .card-cta { color: #fb923c; }
+
+        .converter-card:hover .card-cta { gap: 10px; }
+
+        /* ── Footer ───────────────────────────────────────────────── */
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 32px 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.8125rem;
+        }
+
+        /* ── Responsive ───────────────────────────────────────────── */
+        @media (max-width: 640px) {
+            nav { padding: 16px 20px; }
+            .nav-links a { padding: 6px 10px; font-size: 0.8rem; }
+            .hero { padding: 60px 20px 40px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+    <!-- Navigation -->
+    <nav>
+        <a href="/" class="nav-logo">⚡ UnitFlow</a>
+        <div class="nav-links">
+            <a href="/" class="active">Home</a>
+            <a href="/length">Length</a>
+            <a href="/weight">Weight</a>
+            <a href="/temperature">Temperature</a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-badge">✦ Instant &amp; Accurate</div>
+        <h1>Convert <span>Any Unit</span><br/>In Seconds</h1>
+        <p>A fast, modern unit converter for length, weight, and temperature — no fuss, just results.</p>
+    </section>
+
+    <!-- Cards -->
+    <section class="cards-section">
+        <div class="cards-grid">
+
+            <!-- Length Card -->
+            <a href="/length" class="converter-card card-length" id="card-length">
+                <div class="card-icon">📏</div>
+                <div class="card-title">Length</div>
+                <div class="card-desc">Convert distances and dimensions across metric and imperial systems with precision.</div>
+                <div class="card-units">
+                    <span class="unit-pill">mm</span>
+                    <span class="unit-pill">cm</span>
+                    <span class="unit-pill">m</span>
+                    <span class="unit-pill">km</span>
+                    <span class="unit-pill">inch</span>
+                    <span class="unit-pill">ft</span>
+                    <span class="unit-pill">yd</span>
+                    <span class="unit-pill">mi</span>
+                </div>
+                <div class="card-cta">Convert Length →</div>
+            </a>
+
+            <!-- Weight Card -->
+            <a href="/weight" class="converter-card card-weight" id="card-weight">
+                <div class="card-icon">⚖️</div>
+                <div class="card-title">Weight</div>
+                <div class="card-desc">Switch between metric and imperial mass units — from tiny milligrams to hefty pounds.</div>
+                <div class="card-units">
+                    <span class="unit-pill">mg</span>
+                    <span class="unit-pill">g</span>
+                    <span class="unit-pill">kg</span>
+                    <span class="unit-pill">oz</span>
+                    <span class="unit-pill">lb</span>
+                </div>
+                <div class="card-cta">Convert Weight →</div>
+            </a>
+
+            <!-- Temperature Card -->
+            <a href="/temperature" class="converter-card card-temp" id="card-temperature">
+                <div class="card-icon">🌡️</div>
+                <div class="card-title">Temperature</div>
+                <div class="card-desc">Instantly switch between Celsius, Fahrenheit, and Kelvin with exact formulas.</div>
+                <div class="card-units">
+                    <span class="unit-pill">°C</span>
+                    <span class="unit-pill">°F</span>
+                    <span class="unit-pill">K</span>
+                </div>
+                <div class="card-cta">Convert Temperature →</div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 UnitFlow · Built with Spring Boot &amp; Thymeleaf</p>
+    </footer>
+
+</div>
+</body>
+</html>
